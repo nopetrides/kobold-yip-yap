@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { AudioClipsMap, AudioBufferState } from "../types";
+import { AudioClipsMap } from "../types";
+import { generateDefaultAudioBuffer } from "../utils/defaultAudioGenerator";
 
 export function useAudioBuffers() {
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -23,10 +24,13 @@ export function useAudioBuffers() {
 
   const loadDefaultSound = useCallback(async (sym: "." | "-" | ":") => {
     const ctx = getAudioContext();
+    const baseUrl = import.meta.env.BASE_URL || "/";
+    const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+
     const soundUrls = {
-      ".": "/sounds/Default Tap.wav",
-      "-": "/sounds/Default Scratch.wav",
-      ":": "/sounds/Default Bite.wav",
+      ".": `${cleanBaseUrl}sounds/Default Tap.wav`,
+      "-": `${cleanBaseUrl}sounds/Default Scratch.wav`,
+      ":": `${cleanBaseUrl}sounds/Default Bite.wav`,
     };
     const fileNames = {
       ".": "Default Tap.wav",
@@ -41,7 +45,7 @@ export function useAudioBuffers() {
 
     try {
       const response = await fetch(soundUrls[sym]);
-      if (!response.ok) throw new Error("Network response was not ok");
+      if (!response.ok) throw new Error(`Network error (${response.status}) fetching sound clip.`);
       const arrayBuffer = await response.arrayBuffer();
       
       const audioBuffer = await new Promise<AudioBuffer>((resolve, reject) => {
@@ -60,15 +64,30 @@ export function useAudioBuffers() {
         },
       }));
     } catch (err) {
-      console.warn(`Failed to load default audio for ${sym}:`, err);
-      setClips((prev) => ({
-        ...prev,
-        [sym]: {
-          ...prev[sym],
-          isDecoding: false,
-          error: "Failed to load default sound.",
-        },
-      }));
+      console.warn(`Failed to fetch default audio file for ${sym}, falling back to Web Audio synthesis:`, err);
+      try {
+        const fallbackBuffer = generateDefaultAudioBuffer(ctx, sym);
+        setClips((prev) => ({
+          ...prev,
+          [sym]: {
+            buffer: fallbackBuffer,
+            fileName: `${fileNames[sym]} (Synthesized)`,
+            durationSeconds: fallbackBuffer.duration,
+            isCustom: false,
+            isDecoding: false,
+            error: undefined,
+          },
+        }));
+      } catch (synthErr) {
+        setClips((prev) => ({
+          ...prev,
+          [sym]: {
+            ...prev[sym],
+            isDecoding: false,
+            error: "Failed to load default sound.",
+          },
+        }));
+      }
     }
   }, [getAudioContext]);
 

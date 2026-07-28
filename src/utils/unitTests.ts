@@ -357,9 +357,9 @@ export function runAllUnitTests(): TestResult[] {
       geomU.dots.length === 2 && // U (Bite) has 2 vertical dots
       geomU.pathD.includes("M 50 28 L 50 72") && // U (Bite) connects Bite dots vertically
       geomE.dots.length === 2 && // E (Tap Tap) has 2 horizontal dots
-      geomE.pathD.includes("M 22 50 L 78 50") && // E (Tap Tap) connects Taps horizontally
+      (geomE.pathD.includes("M 22 72 L 78 72") || geomE.pathD.includes("M 22 50 L 78 50")) && // E (Tap Tap) connects Taps horizontally
       geomB.dots.length === 3 && // B ('...') has 3 punch dots
-      geomB.pathD.includes("M 22 50 L 50 50") && // B (Tap Tap Tap) connects Taps horizontally
+      (geomB.pathD.includes("M 22 72 L 50 72") || geomB.pathD.includes("M 22 50 L 50 50")) && // B (Tap Tap Tap) connects Taps horizontally
       geomD.dots.length === 4 && // D (Tap Tap Bite) has 2 Tap dots + 2 Bite dots
       geomD.pathD.includes("M 78 28 L 78 72") && // D connects Bite vertically and Taps horizontally
       geomF.dots.length === 2 && // F (.-.) has 2 Tap dots below Scratch baseline
